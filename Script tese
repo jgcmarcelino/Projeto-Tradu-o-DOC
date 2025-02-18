@@ -1,0 +1,160 @@
+#Autor: Marcelino, João Gabriel Carvalho 
+#Titulo: Processamento de dados XML em corpus linguístico
+#Projeto: Apresentação e representação de elementos do Sertão Nordestino da obra Vidas Secas(1938), de Graciliano Ramos, na tradução para a língua inglesa em Barren Lives (1965), por Ralph Edward Dimmick
+#Curso: Doutorado em Estudos da Tradução
+#Instituição: Universidade Federal de Santa Catarina
+#Tese disponivel na bibilioteca do PPGET
+#Criaçao: 24 de setembro de 2024
+#Ultima atualização: 17 de fevereiro de 2025
+#contato: joaogabrielcarvalho@hotmail.com
+
+#este script foi elaborado como instrumento de processamento corpus linguisticos em tradução
+
+
+# Verificação e Instalação de pacotes: XLM2, GGPLOT2, Dplyr,
+# Verificar se os pacotes estão instalados e os instala caso não estejam
+packages <- c("ggplot2", "xml2", "dplyr", "tidyselect", "readr")
+
+#Primeira etapa: extrair as anotações do corpus e tabular o conteúdo da etiqueta
+
+# Carrega os pacotes necessários
+library(xml2)
+library(dplyr)
+library(tidyselect)
+library(readr)
+
+# Define o caminho do arquivo XML
+file_path <- "D:/Meus documentos/Área de trabalho/Imagens tese/Corpus02en-raw-anotado.xml"
+
+# Lê o arquivo XML
+xml_data <- read_xml(file_path)
+
+# Extrai as anotações (supondo que estejam dentro da tag <annotation>)
+anotacoes <- xml_find_all(xml_data, ".//tag")  # Substitua "annotation" pela sua tag
+
+# Cria uma lista para armazenar os dados
+dados <- list()
+
+# Itera sobre cada anotação para extrair atributos e valores
+for (anotacao in anotacoes) {
+  # Extrai os atributos
+  atributos <- xml_attrs(anotacao)
+  
+  # Adiciona o conteúdo da anotação
+  atributos$conteudo <- xml_text(anotacao)
+  
+  # Adiciona à lista
+  dados[[length(dados) + 1]] <- atributos
+}
+
+# Converte a lista em um data frame
+df_anotacoes <- bind_rows(dados)
+
+# Exibe o data frame
+print(df_anotacoes)
+
+# Define o caminho para salvar a planilha
+output_path <- "D:/Meus documentos/Área de trabalho/Imagens tese/Corpus02en-raw-anotado.xlsx"
+
+# Exporta os resultados para uma planilha Excel
+write_xlsx(df_anotacoes, output_path)
+
+
+# Segunda etapa: quantificar os dados da planilha
+# Carrega os pacotes necessários
+library(readxl)
+library(dplyr)
+library(writexl)
+
+# Define o caminho do arquivo Excel
+file_path <- "D:/Meus documentos/Área de trabalho/Imagens tese/Corpus02en-raw-anotado.xlsx"
+
+# Lê a planilha do Excel
+df <- read_excel(file_path)
+
+# Suponha que as colunas de interesse sejam "coluna1", "coluna2" e "coluna3"
+# Substitua pelos nomes reais das suas colunas
+colunas_interesse <- c("tipo", "estrategia", "recurso")
+
+# Cria um data frame com as contagens de ocorrências
+resultados <- df %>%
+  group_by(across(all_of(colunas_interesse))) %>%
+  summarise(quantidade = n(), .groups = "drop")
+
+# Exibe o data frame com as quantidades de ocorrências
+print(resultados)
+
+# Define o caminho para salvar a nova planilha
+output_path <- "D:/Meus documentos/Área de trabalho/Imagens tese/resultados.xlsx"
+
+# Exporta os resultados para uma nova planilha Excel
+write_xlsx(resultados, output_path)
+
+
+# Quarta etapa: criar gráficos com os dados da planilha
+  #grafico de pizza com os números de domesticacao e estrangeirização
+# Carrega os pacotes necessários
+library(readxl)
+library(ggplot2)
+library(dplyr)
+
+# Define o caminho do arquivo Excel
+file_path <- "D:/Meus documentos/Área de trabalho/Imagens tese/resultados.xlsx"
+
+# Lê a planilha do Excel
+df <- read_excel(file_path)
+
+# Suponha que você tenha uma coluna chamada "categorias" e outra chamada "valores"
+# Substitua pelos nomes reais das suas colunas
+coluna_categorias <- "tipo"  # Coluna com as categorias
+coluna_valores <- "quantidade"  # Coluna com os valores
+
+# Cria um data frame para o gráfico
+dados_pizza <- df %>%
+  group_by(!!sym(coluna_categorias)) %>%
+  summarise(quantidade = sum(!!sym(coluna_valores), na.rm = TRUE))
+
+# Cria o gráfico de pizza
+grafico_pizza <- ggplot(dados_pizza, aes(x = "", y = quantidade, fill = !!sym(coluna_categorias))) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y") +
+  labs(title = "Gráfico de Pizza", fill = coluna_categorias) +
+  theme_minimal()
+
+# Exibe o gráfico
+print(grafico_pizza)
+
+# Se você quiser salvar o gráfico em um arquivo, pode fazer assim:
+ggsave("D:/Meus documentos/Área de trabalho/Imagens tese/resultados-grafico_pizza.png", plot = grafico_pizza)
+
+
+  #gráfico de barras dos recursos para substituir ou conservar elementos da tradução
+# Carrega os pacotes necessários
+library(readxl)
+library(ggplot2)
+library(tidyselect)
+
+# Define o caminho do arquivo Excel
+file_path <- "D:/Meus documentos/Área de trabalho/Imagens tese/resultados.xlsx"
+
+# Lê a planilha do Excel
+df <- read_excel(file_path)
+
+# Suponha que você tenha uma coluna chamada "itens" e outra chamada "valores"
+# Substitua pelos nomes reais das suas colunas
+coluna_itens <- "recurso"  # Coluna com os itens
+coluna_valores <- "quantidade"  # Coluna com os valores a serem plotados
+
+# Cria o gráfico de barras
+grafico_barras <- ggplot(df, aes(x = !!sym(coluna_itens), y = !!sym(coluna_valores))) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Gráfico de Barras", x = coluna_itens, y = coluna_valores) +
+  theme_minimal()
+
+# Exibe o gráfico
+print(grafico_barras)
+
+# Se você quiser salvar o gráfico em um arquivo, pode fazer assim:
+ggsave("D:/Meus documentos/Área de trabalho/Imagens tese/resultados.png", plot = grafico_barras)
+
+
